@@ -34,49 +34,48 @@ object Tasks extends Controller with BaseControllerTrait {
    * TODO need to limit this by projectId or projectName (TBD on what the Client needs).
    * 
    */
-  def list(projectId: String, page: String) = AuthenticatedAction { implicit request =>
+  def list(projectId: Long) = AuthenticatedAction { implicit request =>
 //      println(s"*** content-type: ${request.contentType}")
 //      println(s"*** headers: ${request.headers}")
 //      println(s"*** body: ${request.body}")
 //      println(s"*** query string: ${request.rawQueryString}")
+      println("ENTERED Tasks:list")
+      println(s"projectId = $projectId")
       val uidOption = getUid(session)
       uidOption match {
           case None =>
-              println("Tasks::list, result is None")
+              println("Tasks::list => None")
               NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the UserID"))))
           case Some(uid) =>
-              println("Tasks::list, result is Some")
-//              attemptToGetProjectId(request) match {
-              getProjectId(projectId) match {
-                  case None =>
-                      println("None: Could not get the projectId")
-                      NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Bad ProjectID"))))
-                  case Some(pid) =>
-                      println(s"projectId = $pid")
-//                      val tasks = Task.selectAll(uid, pid)
-//                      tasks.foreach(println)  // debug
-//                      val result = Json.toJson(tasks)
-//                      println(result)
-//                      Ok(result)
-
-                        // 'crap' is here to try to get Sencha working
-                        // see: http://www.playframework.com/documentation/2.2.x/ScalaJson
-                        val json: JsValue = Json.obj(
-                            "success" -> true,
-                            "tasks" -> Json.arr(
-                                Json.obj(
-                                    "id" -> JsNumber(1),
-                                    "description" -> JsString("Hello, world")
-                                )
-                              )
-                        )
-                        println(json)
-                        Ok(json)
+              println("Tasks::list => Some")
+              val tasks = Task.selectAll(uid, projectId)
+              if (tasks.size == 0) {
+                  NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Bad ProjectID"))))
+              } else {
+                  Ok(Json.toJson(Map("success" -> toJson(true), "tasks" -> Json.toJson(tasks))))
+              }
+              
+//            val tasks = Task.selectAll(uid, pid)
+//            Ok(Json.toJson(Map("success" -> toJson(true), "tasks" -> Json.toJson(tasks))))
+                      
+//                        // 'crap' is here to try to get Sencha working
+//                        // see: http://www.playframework.com/documentation/2.2.x/ScalaJson
+//                        val json: JsValue = Json.obj(
+//                            "success" -> true,
+//                            "tasks" -> Json.arr(
+//                                Json.obj(
+//                                    "id" -> JsNumber(1),
+//                                    "description" -> JsString("Hello, world")
+//                                )
+//                              )
+//                        )
+//                        println(json)
+//                        Ok(json)
 
 //                      Ok(Json.obj("id" -> 1, "projectId" -> 1, "description" -> "foo bar baz"))
 //                      val output = """[{"id":1, "projectId":1, "description":"Get tabs working"}]"""
 //                      Ok(output)
-              }
+//              }
       }
   }
   

@@ -2,6 +2,6 @@
 
 curl \
 --request GET \
---cookie PLAY_SESSION="21f606025a43af47c6404d15224ed206813e1742-username=alvin&authenticated=yes&uuid=29b56dfd-0b40-4f12-b16d-9faf909395cc" \
+--cookie PLAY_SESSION="b350f072db8268c6bb0ecb451d3e8a427c9095c9-username=alvin&authenticated=yes&uuid=c1ec2b89-8230-4f1c-ac46-e8de75ba4ddf" \
 http://localhost:8080/projects
 

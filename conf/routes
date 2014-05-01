@@ -23,6 +23,6 @@ GET     /projects/:id/delete             controllers.Projects.delete(id: Long)
 
 # TASKS
 
-GET    /tasks                           controllers.Tasks.list(projectId: String, page: String)
+GET    /tasks                           controllers.Tasks.list(projectId: Long)
 
 # tasks?projectId=1&page=1
