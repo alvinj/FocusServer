@@ -14,18 +14,13 @@ import play.api.libs.json.Json._
 
 object Tasks extends Controller with BaseControllerTrait {
 
-  /**
-   * 
-   * TODO may end up getting the projectName from the Client, not projectId
-   * 
-   */
   val taskForm: Form[Task] = Form(
       mapping(
           "projectId" -> longNumber,
           "status" -> nonEmptyText,
-          "description" -> nonEmptyText
+          "task" -> nonEmptyText
       )
-      ((projectId, status, description) => Task(0, 0, projectId, 0, description, status, null))  // form -> Task
+      ((projectId, status, task) => Task(0, 0, projectId, 0, task, status, null))  // form -> Task
       ((t: Task) => Some((t.projectId, t.status, t.description)))  // Task -> form
   )
 
@@ -54,28 +49,6 @@ object Tasks extends Controller with BaseControllerTrait {
               } else {
                   Ok(Json.toJson(Map("success" -> toJson(true), "tasks" -> Json.toJson(tasks))))
               }
-              
-//            val tasks = Task.selectAll(uid, pid)
-//            Ok(Json.toJson(Map("success" -> toJson(true), "tasks" -> Json.toJson(tasks))))
-                      
-//                        // 'crap' is here to try to get Sencha working
-//                        // see: http://www.playframework.com/documentation/2.2.x/ScalaJson
-//                        val json: JsValue = Json.obj(
-//                            "success" -> true,
-//                            "tasks" -> Json.arr(
-//                                Json.obj(
-//                                    "id" -> JsNumber(1),
-//                                    "description" -> JsString("Hello, world")
-//                                )
-//                              )
-//                        )
-//                        println(json)
-//                        Ok(json)
-
-//                      Ok(Json.obj("id" -> 1, "projectId" -> 1, "description" -> "foo bar baz"))
-//                      val output = """[{"id":1, "projectId":1, "description":"Get tabs working"}]"""
-//                      Ok(output)
-//              }
       }
   }
   
@@ -118,17 +91,21 @@ object Tasks extends Controller with BaseControllerTrait {
   def add = AuthenticatedAction { implicit request =>
       taskForm.bindFromRequest.fold(
           errors => {
+              println("came to 'errors'")
               Ok(Json.toJson(Map(
                   "success" -> toJson(false), 
-                  "msg" -> toJson("Form binding failed. Task is probably already in the database."))))
+                  "msg" -> toJson("Form binding failed."))))
           },
           task => {
+              println("came to 'task'; so far, so good")
               val uidOption = getUid(session)
               println(s"in 'task add' action, uidOption = ${uidOption}")
               uidOption match {
                   case None =>
+                      println("uidOption -> None (not good)")
                       NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the UserID"))))
                   case Some(uid) =>
+                      println("uidOption -> Some (good)")
                       attemptInsertAndReturnResult(uid, task)
               }
           }
@@ -141,15 +118,12 @@ object Tasks extends Controller with BaseControllerTrait {
    * If the uid is valid but the insert fails, return an error.
    */
   private def attemptInsertAndReturnResult(uid: Long, task: Task) = {
-      //
-      // TODO need to use a projectId here
-      //
-      val autoIncrementIdOption = Task.insert(uid, 0, task)
+      val autoIncrementIdOption = Task.insert(uid, task)
       autoIncrementIdOption match {
           case Some(autoIncrementId) =>
-              Ok(Json.toJson(Map("success" -> toJson(true), "msg" -> toJson("Success!"), "id" -> toJson(autoIncrementId))))
+              Ok(Json.toJson(Map("success" -> toJson(true), "msg" -> toJson("Success. Task was added."), "id" -> toJson(autoIncrementId))))
           case None =>
-             Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("SQL INSERT failed"), "id" -> toJson(-1))))
+              Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Bummer. INSERT failed."), "id" -> toJson(-1))))
       }
   }
   

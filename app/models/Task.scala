@@ -43,16 +43,16 @@ object Task {
    * Currently assumes this Task does not have a parent, and lets the database
    * insert a default parent_id of 0.
    */
-  def insert(userId: Long, projectId: Long, task: Task): Option[Long] = {
+  def insert(userId: Long, task: Task): Option[Long] = {
       DB.withConnection { implicit c =>
           SQL("""
               INSERT INTO tasks (user_id, project_id, description) 
-              VALUES ({userId}, {projectId}, {description}
+              VALUES ({userId}, {projectId}, {description})
               """
           )
           .on(
               'userId -> userId,
-              'projectId -> projectId,
+              'projectId -> task.projectId,
               'description -> task.description
           ).executeInsert()
       }
