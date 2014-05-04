@@ -24,7 +24,7 @@ object Task {
    * Returns all the tasks for the given user and project.
    */
   def selectAll(uid: Long, projectId: Long): List[Task] = DB.withConnection { implicit connection => 
-      val sqlQuery = SQL("SELECT * FROM tasks WHERE user_id = {uid} AND project_id = {projectId} ORDER BY id ASC")
+      val sqlQuery = SQL("SELECT * FROM tasks WHERE user_id = {uid} AND project_id = {projectId} ORDER BY id DESC")
           .on("uid" -> uid, "projectId" -> projectId)
       sqlQuery().map ( row =>
         Task(
@@ -64,20 +64,48 @@ object Task {
    * this value should be 1 if one record is updated, and 0 if no records were
    * found by the query (meaning that the taskId/userId did not find a record).
    */
-  def updateStatus(uid: Long, taskId: Long, status: String): Int = {
+  def updateStatus(uid: Long, projectId: Long, taskId: Long, status: String): Int = {
       DB.withConnection { implicit c =>
           val nRowsUpdated = SQL(
               """
                   UPDATE tasks SET status = {status} 
                   WHERE id = {taskId} 
                   AND user_id = {userId}
+                  AND project_id = {projectId}
               """)
-              .on("status" -> status, "id" -> taskId, "userId" -> uid)
+              .on(
+                  "status" -> status, 
+                  "id" -> taskId,
+                  "userId" -> uid,
+                  "projectId" -> projectId
+              )
               .executeUpdate()
           nRowsUpdated
       }
   }
   
+  /**
+   * Get the taskId given the uid, projectId, and taskDescription.
+   */
+  def getTaskId(uid: Long, projectId: Long, taskDescription: String): Option[Long] = DB.withConnection { implicit connection => 
+      val rowOption = SQL(
+          """
+          SELECT id FROM tasks 
+          WHERE user_id = {uid}
+          AND project_id = {projectId}
+          AND description = {taskDescription}
+          """
+       ).on(
+           "uid" -> uid, 
+           "projectId" -> projectId, 
+           "taskDescription" -> taskDescription
+       ).apply
+        .headOption
+       rowOption match {
+           case Some(row) => Some(row[Long]("id"))
+           case None => None
+       }
+  }
   
   /**
    * JSON Serializer Code

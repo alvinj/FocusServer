@@ -25,5 +25,6 @@ GET     /projects/:id/delete             controllers.Projects.delete(id: Long)
 
 GET    /tasks                           controllers.Tasks.list(projectId: Long)
 POST   /tasks/add                       controllers.Tasks.add
+POST   /tasks/updateStatus              controllers.Tasks.updateStatus
 
 # tasks?projectId=1&page=1

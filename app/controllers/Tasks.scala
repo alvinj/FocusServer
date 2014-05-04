@@ -91,22 +91,44 @@ object Tasks extends Controller with BaseControllerTrait {
   def add = AuthenticatedAction { implicit request =>
       taskForm.bindFromRequest.fold(
           errors => {
-              println("came to 'errors'")
               Ok(Json.toJson(Map(
                   "success" -> toJson(false), 
-                  "msg" -> toJson("Form binding failed."))))
+                  "msg" -> toJson("Sorry, but the form binding failed."))))
           },
           task => {
-              println("came to 'task'; so far, so good")
               val uidOption = getUid(session)
-              println(s"in 'task add' action, uidOption = ${uidOption}")
               uidOption match {
                   case None =>
-                      println("uidOption -> None (not good)")
                       NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the UserID"))))
                   case Some(uid) =>
-                      println("uidOption -> Some (good)")
                       attemptInsertAndReturnResult(uid, task)
+              }
+          }
+      )
+  }
+
+  def updateStatus = AuthenticatedAction { implicit request =>
+      taskForm.bindFromRequest.fold(
+          errors => {
+              Ok(Json.toJson(Map(
+                  "success" -> toJson(false), 
+                  "msg" -> toJson("Sorry, but the form binding failed."))))
+          },
+          task => {
+              // TODO clean up this code
+              val uidOption = getUid(session)
+              uidOption match {
+                  case None =>
+                      NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the UserID"))))
+                  case Some(uid) =>
+                      val taskIdOption = Task.getTaskId(uid, task.projectId, task.description)
+                      taskIdOption match {
+                          case None =>
+                              NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the Task ID."))))
+                          case Some(taskId) =>
+                              attemptStatusUpdateAndReturnResult(uid, task.projectId, task.id, task.status)
+                      }
+                      
               }
           }
       )
@@ -126,41 +148,13 @@ object Tasks extends Controller with BaseControllerTrait {
               Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Bummer. INSERT failed."), "id" -> toJson(-1))))
       }
   }
-  
-  /**
-   * 
-   * TODO need the projectId or projectName
-   * 
-   */
-  def updateStatus = AuthenticatedAction { implicit request =>
-      taskForm.bindFromRequest.fold(
-          errors => {
-              Ok(Json.toJson(Map(
-                  "success" -> toJson(false), 
-                  "msg" -> toJson("Sorry, but the form binding failed."))))
-          },
-          task => {
-              val uidOption = getUid(session)
-              println(s"in 'task add' action, uidOption = ${uidOption}")
-              uidOption match {
-                  case None =>
-                      NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the UserID"))))
-                  case Some(uid) =>
-                      attemptStatusUpdate(uid, task.id, task.status)
-              }
-          }
-      )
-  }
 
-  private def attemptStatusUpdate(uid: Long, taskId: Long, status: String) = {
-      //
-      // TODO need to use a projectId here???
-      //
-      val numRecsUpdated = Task.updateStatus(uid, taskId, status)  // should always be 1
+  private def attemptStatusUpdateAndReturnResult(uid: Long, projectId: Long, taskId: Long, status: String) = {
+      val numRecsUpdated = Task.updateStatus(uid, projectId, taskId, status)  // should always be 1
       if (numRecsUpdated == 1) {
           Ok(Json.toJson(Map("success" -> toJson(true), "msg" -> toJson("Success!"))))
       } else {
-         Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("SQL INSERT failed"))))
+          Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("SQL INSERT failed"))))
       }
   }
 
