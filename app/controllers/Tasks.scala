@@ -126,7 +126,7 @@ object Tasks extends Controller with BaseControllerTrait {
                           case None =>
                               NotAcceptable(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Could not find the Task ID."))))
                           case Some(taskId) =>
-                              attemptStatusUpdateAndReturnResult(uid, task.projectId, task.id, task.status)
+                              attemptStatusUpdateAndReturnResult(uid, task.projectId, taskId, task.status)
                       }
                       
               }
@@ -150,11 +150,16 @@ object Tasks extends Controller with BaseControllerTrait {
   }
 
   private def attemptStatusUpdateAndReturnResult(uid: Long, projectId: Long, taskId: Long, status: String) = {
+      println(s"uid = $uid")
+      println(s"projectId = $projectId")
+      println(s"taskId = $taskId")
+      println(s"status = $status")
       val numRecsUpdated = Task.updateStatus(uid, projectId, taskId, status)  // should always be 1
       if (numRecsUpdated == 1) {
           Ok(Json.toJson(Map("success" -> toJson(true), "msg" -> toJson("Success!"))))
       } else {
-          Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("SQL INSERT failed"))))
+          println(s"numRecsUpdated = $numRecsUpdated")
+          Ok(Json.toJson(Map("success" -> toJson(false), "msg" -> toJson("Bummer, status update failed."))))
       }
   }
 

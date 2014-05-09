@@ -22,9 +22,18 @@ object Task {
 
   /**
    * Returns all the tasks for the given user and project.
+   * TODO this method now only returns tasks with a status of 'c'; let the caller pass the desired status in.
    */
   def selectAll(uid: Long, projectId: Long): List[Task] = DB.withConnection { implicit connection => 
-      val sqlQuery = SQL("SELECT * FROM tasks WHERE user_id = {uid} AND project_id = {projectId} ORDER BY id DESC")
+      val sqlQuery = SQL(
+          """
+          SELECT * FROM tasks 
+          WHERE user_id = {uid} 
+          AND project_id = {projectId}
+          AND status = 'c'
+          ORDER BY id DESC
+          """
+          )
           .on("uid" -> uid, "projectId" -> projectId)
       sqlQuery().map ( row =>
         Task(
@@ -75,7 +84,7 @@ object Task {
               """)
               .on(
                   "status" -> status, 
-                  "id" -> taskId,
+                  "taskId" -> taskId,
                   "userId" -> uid,
                   "projectId" -> projectId
               )
@@ -87,22 +96,32 @@ object Task {
   /**
    * Get the taskId given the uid, projectId, and taskDescription.
    */
-  def getTaskId(uid: Long, projectId: Long, taskDescription: String): Option[Long] = DB.withConnection { implicit connection => 
+  def getTaskId(uid: Long, projectId: Long, taskDescription: String): Option[Long] = DB.withConnection { implicit connection =>
+      println(s"--- getTaskId ---")
+      println(s"uid: $uid")
+      println(s"projectId: $projectId")
+      println(s"description: $taskDescription")
+      // note: status=c is necessary because the user may create a new task with the same name as an old task
+      // (like 'make coffee'), and i only want to get the new/active one
       val rowOption = SQL(
           """
           SELECT id FROM tasks 
           WHERE user_id = {uid}
           AND project_id = {projectId}
           AND description = {taskDescription}
+          AND status = 'c'
           """
-       ).on(
-           "uid" -> uid, 
-           "projectId" -> projectId, 
-           "taskDescription" -> taskDescription
-       ).apply
-        .headOption
+          ).on(
+              "uid" -> uid, 
+              "projectId" -> projectId, 
+              "taskDescription" -> taskDescription
+          ).apply
+           .headOption
        rowOption match {
-           case Some(row) => Some(row[Long]("id"))
+           case Some(row) => 
+               val res = Some(row[Long]("id"))
+               println(res)
+               res
            case None => None
        }
   }
